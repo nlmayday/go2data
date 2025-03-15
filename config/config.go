@@ -20,22 +20,15 @@ type DBConfig struct {
 }
 
 type TaskConfig struct {
-	TableName     string        `yaml:"tableName"`
-	Columns       []string      `yaml:"columns"`
-	DataColumn    []int         `yaml:"dataColumn"`
-	BatchSize     int           `yaml:"batchSize"`
-	Delimiter     string        `yaml:"delimiter"`
-	TxtBeginLine  int           `yaml:"txtBeginLine"`
-	CsvBeginLine  int           `yaml:"csvBeginLine"`
-	XlsxBeginLine int           `yaml:"xlsxBeginLine"`
-	MultipleTable bool          `yaml:"mulitipleTable"`
-	Tables        []TableConfig `yaml:"table"`
-}
-
-type TableConfig struct {
-	TableName string `yaml:"tableName"`
-	// Columns   []string `yaml:"columns"`
-	// DataType  []string `yaml:"dataType"`
+	TableName     string   `yaml:"tableName"`
+	Columns       []string `yaml:"columns"`
+	DataColumn    []int    `yaml:"dataColumn"`
+	BatchSize     int      `yaml:"batchSize"`
+	Delimiter     string   `yaml:"delimiter"`
+	TxtBeginLine  int      `yaml:"txtBeginLine"`
+	CsvBeginLine  int      `yaml:"csvBeginLine"`
+	XlsxBeginLine int      `yaml:"xlsxBeginLine"`
+	MultipleTable bool     `yaml:"mulitipleTable"`
 }
 
 func LoadConfig(path string) (Config, error) {
