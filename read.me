@@ -1,0 +1,56 @@
+我现在要采集csv,xlsx,txt这三种文件的数据到mysql, 每一个文件的数据都比较大,所以的分批比如1000行采集入库
+1.采用golang，gorm框架, mysql
+3.csv,xlsx,txt文件解析到[]map[string]string,其中key为列名，value为列值,具体逻辑看3 
+2.config.YML文件配置文件，数据库基础配置，表名配置（user)，表字段(name, phone, addr), 采集列（1,2,3),比如列1的值对应name,列2的值对应phone,列3的值对应addr以此类推，放入map[string]string
+4.考虑到文件太大，所以采用分批采集入库
+5.考虑到有可能中断，所以采用日志文件记录当前采集到的位置
+6.同时要一次性批量插入数据库
+7.如果是txt文件，采用config.yml里面的配置分割符
+8.如果多表就采用携程处理，同时插入多个表,新的用模版表动态创建，在启动写成读写文件的时候，如果单表就直接插入，如果多表就采用模版表动态创建
+9.采集文件在data目录下面
+
+目录结构
+model/
+    db.go
+    user.go
+main.go
+logs/
+    filename1_2018-08-08_24-00-00.log
+    filename2_2018-08-08_24-00-00.log
+config/
+    config.yml
+data/
+backup/
+db.go用公初始化一个数据库grom的是实例
+data释放采集分析文件的处理
+backup是采集完了就把文件移动到这个目录
+
+config.yml如下
+# 数据库配置
+db:
+  host: localhost
+  port: 3306
+  user: root
+  password: 
+  dbname: test_db
+
+# 任务配置
+task:
+  tableName: users
+  columns: ["name", "phone", "addr"] # 数据列映射
+  dataColumn: [1,2,3] # 数据列
+  batchSize: 1000                   # 每批处理行数
+  delimiter: ","                    # TXT文件分隔符（默认逗号）
+  txtBeginLine: 1                   # TXT文件开始行数（默认1）
+  csvBeginLine: 1                   # CSV文件开始行数（默认1）
+  xlsxBeginLine: 1                   # XLSX文件开始行数（默认1）
+  mulitipleTable: false             # 是否多表,如果多表就采用携程处理，同时插入多个表
+  table:
+    - tableName: users
+      columns: ["name", "phone", "addr"]
+      dataType: [string, string, string]
+
+1.没有记录当前读取到文件的那一行，所以需要自己记录
+2.下次读取此文件时，从上次记录的那一行开始读取
+3.需要一次行读取配置batchSize的数据，批量插入数据库
+4.当mulitipleTable=true时时，启动10携程处理，同时插入多个表，在启动携程的时候表根据文件名命名以config.tableName动态的创建；当mulitipleTable=false时，启动1携程处理，同时插入一个表，表名为config.tableName
