@@ -179,9 +179,9 @@ func (p *DataProcessor) readAndBatch(reader interface{ Read() ([]string, error) 
 		if err == io.EOF {
 			return nil // 文件已全部处理过
 		}
-		if err != nil {
-			return err
-		}
+		// if err != nil && err != csv.ParseError {
+		// 	return err
+		// }
 		currentLine++
 	}
 
@@ -190,7 +190,7 @@ func (p *DataProcessor) readAndBatch(reader interface{ Read() ([]string, error) 
 		if err == io.EOF {
 			break
 		}
-		if err != nil {
+		if err != nil && len(row) == 0 {
 			return err
 		}
 		state.mu.Lock()
@@ -200,9 +200,21 @@ func (p *DataProcessor) readAndBatch(reader interface{ Read() ([]string, error) 
 		record := make(map[string]string)
 		for i, colIdx := range p.cfg.Task.DataColumn {
 			if colIdx-1 < len(row) {
-				record[p.cfg.Task.Columns[i]] = row[colIdx-1]
+				record[p.cfg.Task.Columns[i]] = row[colIdx]
 			}
 		}
+
+		isAllempty := true
+		for _, value := range record {
+			if value != "" {
+				isAllempty = false
+				break
+			}
+		}
+		if isAllempty {
+			continue
+		}
+
 		batch = append(batch, record)
 
 		if len(batch) >= p.cfg.Task.BatchSize {
@@ -240,17 +252,49 @@ func (p *DataProcessor) processWorker(tableName string, recordsChan <-chan []map
 }
 
 func (p *DataProcessor) batchInsert(records []map[string]string, tableName string) error {
-	return p.db.Transaction(func(tx *gorm.DB) error {
-		var users []model.User
-		for _, r := range records {
-			users = append(users, model.User{
-				Name:  r["name"],
-				Phone: r["phone"],
-				Addr:  r["addr"],
-			})
+	// return p.db.Transaction(func(tx *gorm.DB) error {
+	// 	var users []model.User
+	// 	for _, r := range records {
+	// 		users = append(users, model.User{
+	// 			Name:  r["name"],
+	// 			Phone: r["phone"],
+	// 			Addr:  r["addr"],
+	// 		})
+	// 	}
+	// 	// users := make([]map[string]string, 0)
+	// 	// users = append(users, records...)
+	// 	return tx.Table(tableName).Create(&users).Error
+	// })
+	// 用原生SQL插入
+	// 构建INSERT语句
+	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES ", tableName, strings.Join(p.cfg.Task.Columns, ","))
+	for _, record := range records {
+		var values []string
+		for _, val := range record {
+			_ = val
+			// 使用 ? 作为占位符，避免SQL注入
+			values = append(values, "?")
 		}
-		return tx.Table(tableName).Create(&users).Error
-	})
+		sql += fmt.Sprintf("(%s),", strings.Join(values, ","))
+	}
+	// 去掉最后一个逗号
+	sql = sql[:len(sql)-1]
+
+	// 准备参数
+	var params []interface{}
+	for _, record := range records {
+		for _, val := range record {
+			params = append(params, val)
+		}
+	}
+
+	// 执行INSERT语句
+	result := p.db.Exec(sql, params...)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
 }
 
 func (p *DataProcessor) getLastProcessedLine(filename string) (int, error) {
