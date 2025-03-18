@@ -283,8 +283,11 @@ func (p *DataProcessor) batchInsert(records []map[string]string, tableName strin
 	// 准备参数
 	var params []interface{}
 	for _, record := range records {
-		for _, val := range record {
-			params = append(params, val)
+		// for _, val := range record {
+		// 	// params = append(params, val)
+		// }
+		for _, val := range p.cfg.Task.Columns {
+			params = append(params, record[val])
 		}
 	}
 
