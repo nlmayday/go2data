@@ -71,12 +71,15 @@ func (p *DataProcessor) processFile(path string, info os.FileInfo, err error) er
 		return err
 	}
 
-	return nil
-	// 移动文件到已处理目录 backup
-	backupDir := "backup/"
-	_ = os.MkdirAll(backupDir, 0755)
-	dest := filepath.Join(backupDir, filepath.Base(path))
-	return os.Rename(path, dest)
+	// return nil
+	// // 移动文件到已处理目录 backup
+	// backupDir := "backup/"
+	// _ = os.MkdirAll(backupDir, 0755)
+	// dest := filepath.Join(backupDir, filepath.Base(path))
+	// return os.Rename(path, dest)
+
+	// 删除文件
+	return os.Remove(path)
 }
 
 func (p *DataProcessor) processCSV(path string, state *ProcessState) error {
