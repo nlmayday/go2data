@@ -1,6 +1,6 @@
 module go2data
 
-go 1.23.6
+go 1.23.4
 
 require (
 	github.com/xuri/excelize/v2 v2.9.0

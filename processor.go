@@ -66,6 +66,9 @@ func (p *DataProcessor) processFile(path string, info os.FileInfo, err error) er
 	case ".txt":
 		state.CurrentLine = p.cfg.Task.TxtBeginLine
 		err = p.processTXT(path, state)
+	default:
+		log.Println(err)
+		return nil
 	}
 	if err != nil {
 		return err
@@ -90,7 +93,7 @@ func (p *DataProcessor) processCSV(path string, state *ProcessState) error {
 	defer file.Close()
 
 	reader := csv.NewReader(file)
-	reader.Comma = rune(p.cfg.Task.Delimiter[0])
+	// reader.Comma = rune(p.cfg.Task.Delimiter[0])
 
 	return p.processFileWithReader(reader, state)
 }
@@ -297,6 +300,7 @@ func (p *DataProcessor) batchInsert(records []map[string]string, tableName strin
 	// 执行INSERT语句
 	result := p.db.Exec(sql, params...)
 	if result.Error != nil {
+		log.Println(result.Error.Error())
 		return result.Error
 	}
 
