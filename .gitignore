@@ -4,3 +4,4 @@ go2data
 .DS_Store
 data/*
 logs/*
+.vscode/mcp.json
