@@ -205,7 +205,7 @@ func (p *DataProcessor) readAndBatch(reader interface{ Read() ([]string, error) 
 
 		record := make(map[string]string)
 		for i, colIdx := range p.cfg.Task.DataColumn {
-			if colIdx >= 0 && colIdx < len(row) {
+			if colIdx < len(row) {
 				record[p.cfg.Task.Columns[i]] = row[colIdx]
 			} else {
 				p.logger.Printf("Index out of range: colIdx=%d, row length=%d", colIdx, len(row))

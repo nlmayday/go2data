@@ -2,17 +2,18 @@
 db:
   host: localhost
   port: 3306
-  user: test
+  user: dog
   password: 123456
-  dbname: test
+  dbname: procdata
 
 # 任务配置
 task:
-  tableName: users
-  columns: ["name","phone","addr"] # 数据列映射
-  dataColumn: [1,2,3] # 数据列
-  batchSize: 1000                   # 每批处理行数
-  delimiter: ","                    # TXT文件分隔符（默认逗号）
+  tableName: shipedData
+  columns: ["name","cardno","phoneno","bankno","banktype","address"] # 数据列映射
+#列数从0开始下标
+  dataColumn: [1,2,3,4,5,6] # 数据列
+  batchSize:  1                  # 每批处理行数
+  delimiter: "|"                    # TXT文件分隔符（默认逗号）
   txtBeginLine: 1                   # TXT文件开始行数（默认1）
   csvBeginLine: 1                   # CSV文件开始行数（默认1）
   xlsxBeginLine: 1                   # XLSX文件开始行数（默认1）
