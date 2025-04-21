@@ -9,13 +9,14 @@ db:
 # 任务配置
 task:
   tableName: shipedData
-  columns: ["name","cardno","phoneno","bankno","banktype","address"] # 数据列映射
+  columns: ["name","brithday","phone","card_id","statistics_date","address"] # 数据列映射
 #列数从0开始下标
   dataColumn: [1,2,3,4,5,6] # 数据列
-  batchSize:  1                  # 每批处理行数
+  batchSize:  1000                 # 每批处理行数
   delimiter: "|"                    # TXT文件分隔符（默认逗号）
   txtBeginLine: 1                   # TXT文件开始行数（默认1）
   csvBeginLine: 1                   # CSV文件开始行数（默认1）
   xlsxBeginLine: 1                   # XLSX文件开始行数（默认1）
-  mulitipleTable: false             # 是否多表,如果多表就采用携程处理，同时插入多个表
-     
+  mulitipleTable: true             # 按顺序插入表，满tableSize后插入下一个表,如果为false，则只插入一个表tableName
+  tableSize: 500000000 # 一个表的最大插入数量
+  tableNames: ["user110", "user120"]        # 表名

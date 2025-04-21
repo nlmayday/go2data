@@ -6,6 +6,7 @@ import (
 	"go2data/model"
 	"log"
 	"path/filepath"
+	"sync"
 	"time"
 )
 
@@ -22,8 +23,12 @@ func main() {
 	}
 
 	processor := &DataProcessor{
-		cfg: cfg,
-		db:  model.DB,
+		cfg:            cfg,
+		db:             model.DB,
+		tableIndex:     0,
+		tableNames:     cfg.Task.TableNames,
+		tableIndexLock: sync.Mutex{},
+		tableCounters:  sync.Map{},
 	}
 
 	startAt := time.Now()

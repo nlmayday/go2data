@@ -5,7 +5,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"go2data/config"
-	"go2data/model"
 	"io"
 	"log"
 	"os"
@@ -24,6 +23,11 @@ type DataProcessor struct {
 	db         *gorm.DB
 	logger     *log.Logger
 	currentLog string // 新增字段，记录当前日志文件名
+
+	tableCounters  sync.Map
+	tableNames     []string
+	tableIndex     int
+	tableIndexLock sync.Mutex
 }
 
 type ProcessState struct {
@@ -163,9 +167,9 @@ func (p *DataProcessor) processFileWithReader(reader interface{ Read() ([]string
 	for i := 0; i < workerCount; i++ {
 		wg.Add(1)
 		tableName := p.cfg.Task.TableName
-		if p.cfg.Task.MultipleTable {
-			tableName = fmt.Sprintf("%s_%d", p.cfg.Task.TableName, i)
-		}
+		// if p.cfg.Task.MultipleTable {
+		// 	tableName = fmt.Sprintf("%s_%d", p.cfg.Task.TableName, i)
+		// }
 		go p.processWorker(tableName, workerChan, &wg)
 	}
 
@@ -248,11 +252,11 @@ func (p *DataProcessor) processWorker(tableName string, recordsChan <-chan []map
 	defer wg.Done()
 
 	// 如果是多表模式，动态创建表
-	if p.cfg.Task.MultipleTable {
-		p.db.Table(tableName).AutoMigrate(&model.User{})
-	}
-
+	// if p.cfg.Task.MultipleTable {
+	// 	p.db.Table(tableName).AutoMigrate(&model.User{})
+	// }
 	for records := range recordsChan {
+		tableName = p.getCurrentTableName(tableName, p.cfg.Task.BatchSize)
 		if err := p.batchInsert(records, tableName); err != nil {
 			p.logger.Printf("Error inserting batch to %s: %v", tableName, err)
 		}
@@ -365,4 +369,37 @@ func (p *DataProcessor) findLatestLog(filename string) string {
 		return ""
 	}
 	return latestFile
+}
+
+func (p *DataProcessor) getCurrentTableName(baseTableName string, batchSize int) string {
+	if !p.cfg.Task.MultipleTable {
+		return baseTableName
+	}
+
+	p.tableIndexLock.Lock()
+	defer p.tableIndexLock.Unlock()
+
+	// 获取当前表的记录数
+	count, _ := p.tableCounters.LoadOrStore(baseTableName+"_"+strconv.Itoa(p.tableIndex), int64(0))
+	currentCount := count.(int64)
+
+	// 检查是否需要切换到新表
+	if currentCount+int64(batchSize) > p.cfg.Task.TableSize {
+		p.tableIndex++
+		if p.tableIndex >= len(p.cfg.Task.TableNames) {
+			p.tableIndex = len(p.cfg.Task.TableNames) - 1
+		}
+		p.tableCounters.Store(baseTableName+"_"+strconv.Itoa(p.tableIndex), int64(0))
+		p.logger.Printf("Switching to new table: %s_%d", baseTableName, p.tableIndex)
+	}
+	if p.tableIndex < 0 {
+		p.logger.Printf("Table index is less than 0: %d", p.tableIndex)
+	}
+
+	// 更新计数器
+	p.tableCounters.Store(baseTableName+"_"+strconv.Itoa(p.tableIndex), currentCount+int64(batchSize))
+
+	// 返回当前表名
+	// return fmt.Sprintf("%s_%d", baseTableName, p.tableIndex)
+	return p.cfg.Task.TableNames[p.tableIndex]
 }

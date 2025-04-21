@@ -29,6 +29,8 @@ type TaskConfig struct {
 	CsvBeginLine  int      `yaml:"csvBeginLine"`
 	XlsxBeginLine int      `yaml:"xlsxBeginLine"`
 	MultipleTable bool     `yaml:"mulitipleTable"`
+	TableSize     int64    `yaml:"tableSize"` // 一个表最大放多少
+	TableNames    []string `yaml:"tableNames"`
 }
 
 func LoadConfig(path string) (Config, error) {
